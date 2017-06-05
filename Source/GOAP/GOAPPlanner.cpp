@@ -37,9 +37,15 @@ TArray<TWeakObjectPtr<UGOAPAction>> UGOAPPlanner::Plan(UObject* outer, const int
 			{
 				// Make sure we aren't caught in an action loop by only allowing actions that are
 				// not equal to the one currently processing to be pushed onto the action queue
-				// E.g. EnterCover->ExitCover->EnterCoved->ExitCover
+				// E.g. EnterCover->ExitCover->EnterCover->ExitCover
 				if (!workNode.Parent.Action.IsValid() || !workNode.Parent.Node->Parent.Action.IsValid() || action != workNode.Parent.Node->Parent.Action)
 				{
+					// Procedural precondition(s) NOT satisfied. This is not a valid action.
+					if (!action->CheckProceduralPreconditions(&controller))
+					{
+						continue;
+					}
+
 					// The new node is the previous state plus the effects of the action that got us here
 					FGOAPNode newNode;
 					newNode.State = workNode.State;

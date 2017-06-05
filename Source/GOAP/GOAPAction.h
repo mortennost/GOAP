@@ -7,6 +7,7 @@
 #include "GOAPState.h"
 #include "GOAPStateEditor.h"
 #include "UObject/NoExportTypes.h"
+#include "Runtime/AIModule/Classes/BehaviorTree/BehaviorTreeTypes.h"
 #include "GOAPAction.generated.h"
 
 class AGOAPAIController;

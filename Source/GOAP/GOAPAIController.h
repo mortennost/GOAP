@@ -11,6 +11,7 @@
 #include "GOAPEQSJob.h"
 #include "EnvironmentQuery/EnvQueryManager.h"
 #include "GameFramework/Actor.h"
+#include "BehaviorTree/BlackboardComponent.h"
 #include "GOAPAIController.generated.h"
 
 UCLASS()
@@ -25,6 +26,13 @@ private:
 	bool _IsMoveCompleted = true;
 
 	bool LoadGOAPDefaults();
+
+
+protected:
+	// Pointer to BBData asset to be spawned as component for this agent.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "GOAP")
+	UBlackboardData* BlackboardDataAsset;
+
 
 public:
 	// Constructor (used to initialize CrowdFollowingComponent (Detour behavior) as the default PathFollowingComponent)

@@ -2,12 +2,17 @@
 
 #include "GOAP.h"
 #include "GOAPAIController.h"
+#include "BehaviorTree/BlackboardComponent.h"
 #include "Navigation/CrowdFollowingComponent.h"
 
 AGOAPAIController::AGOAPAIController(const FObjectInitializer& objInitializer) :
 	Super(objInitializer.SetDefaultSubobjectClass<UCrowdFollowingComponent>(TEXT("PathFollowingComponent")))
 {
+	// Set TeamID. Default TeamID for AI agents are 1 (Player == 0)
 	SetGenericTeamId(FGenericTeamId(1));
+
+	// Create Blackboard component
+	Blackboard = CreateDefaultSubobject<UBlackboardComponent>(TEXT("WS_BlackboardComponent"));
 }
 
 bool AGOAPAIController::LoadGOAPDefaults()
@@ -29,6 +34,16 @@ bool AGOAPAIController::LoadGOAPDefaults()
 	for (FGOAPAtom& state : StartingState.State)
 	{
 		WorldState.SetState(state.Key, state.Value);
+	}
+
+	if (BlackboardDataAsset != nullptr && Blackboard != nullptr)
+	{
+		bool bbInitialized = Blackboard->InitializeBlackboard(*BlackboardDataAsset);
+		if (!bbInitialized)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("Blackboard initialization failed!!"));
+			return false;
+		}
 	}
 
 	return true;
@@ -149,6 +164,8 @@ void AGOAPAIController::Possess(APawn* pawn)
 void AGOAPAIController::OnMoveCompleted(FAIRequestID requestID, const FPathFollowingResult& result)
 {
 	Super::OnMoveCompleted(requestID, result);
+
+	SetWorldState(Settings->GetByteKey(MakeShareable<FString>(new FString(TEXT("AtTargetLocation")))), false);
 
 	_IsMoveCompleted = true;
 }
