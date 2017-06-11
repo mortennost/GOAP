@@ -2,10 +2,11 @@
 #pragma once
 #include "GameFramework/Character.h"
 #include "GenericTeamAgentInterface.h"
+#include "Navigation/CrowdAgentInterface.h"
 #include "GOAPCharacter.generated.h"
 
 UCLASS(config=Game)
-class AGOAPCharacter : public ACharacter, public IGenericTeamAgentInterface
+class AGOAPCharacter : public ACharacter, public IGenericTeamAgentInterface, public ICrowdAgentInterface
 {
 	GENERATED_BODY()
 
@@ -64,6 +65,8 @@ protected:
 	// APawn interface
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	// End of APawn interface
+
+	virtual void BeginPlay() override;
 
 	virtual FGenericTeamId GetGenericTeamId() const override;
 

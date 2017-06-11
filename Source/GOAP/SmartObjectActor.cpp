@@ -27,3 +27,8 @@ void ASmartObjectActor::Tick(float DeltaTime)
 
 }
 
+FGenericTeamId ASmartObjectActor::GetGenericTeamId() const
+{
+	return TeamId;
+}
+

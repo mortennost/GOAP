@@ -10,7 +10,6 @@
 #include "GOAPAtomKey.h"
 #include "GOAPEQSJob.h"
 #include "EnvironmentQuery/EnvQueryManager.h"
-#include "GameFramework/Actor.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "GOAPAIController.generated.h"
 
@@ -21,9 +20,7 @@ class GOAP_API AGOAPAIController : public AAIController
 	
 private:
 	UPROPERTY()
-	UGOAPPlanner* _Planner;
-
-	bool _IsMoveCompleted = true;
+	UGOAPPlanner* Planner;
 
 	bool LoadGOAPDefaults();
 
@@ -38,11 +35,7 @@ public:
 	// Constructor (used to initialize CrowdFollowingComponent (Detour behavior) as the default PathFollowingComponent)
 	AGOAPAIController(const FObjectInitializer& objInitializer);
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GOAP")
 	UGOAPSettings* Settings = GetMutableDefault<UGOAPSettings>();
-
-	// Weak pointer to MoveToTarget, used when moving to an actor to abort if the target is destroyed
-	TWeakObjectPtr<AActor> MoveToTargetActor;
 
 
 	// The currently active Plan (queue of actions)
@@ -71,8 +64,6 @@ public:
 	// Current EQS job being processed
 	FGOAPEQSJob EQSCurrentJob;
 
-	bool HasMadeEQSRequest;
-
 	FEnvQueryRequest EQSRequest;
 	
 
@@ -87,6 +78,9 @@ public:
 	// Default starting goal of the agent
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "GOAP")
 	FGOAPAtom DefaultGoal;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "GOAP")
+	TArray<FGOAPGoal> Goals;
 
 	// Maximum number of nodes able to be searched through in the planning graph. Prevents crash if graph gets stuck in a loop
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "GOAP")
@@ -106,17 +100,13 @@ public:
 
 	// ---- Helpers for changing to MoveTo states ----
 
-	// Move to an actor
+	// Move to a Location
 	UFUNCTION(BlueprintCallable, Category = "GOAP")
-	void SetMoveToStateWithTarget(AActor* targetActor, const float acceptanceRadius, const float walkSpeed);
+	void SetMoveToStateWithLocation(const FVector targetLocation, const float walkSpeed = 400.0f, const float acceptanceRadius = 50.0f);
 
-	// Move to a location, sets MoveTo target to current character
+	// Move to an Actor
 	UFUNCTION(BlueprintCallable, Category = "GOAP")
-	void SetMoveToStateWithLocation(const FVector targetLocation, const float walkSpeed);
-
-	
-	UFUNCTION(BlueprintCallable, Category = "GOAP")
-	bool IsMoveCompleted() { return _IsMoveCompleted && GetMoveStatus() != EPathFollowingStatus::Moving; }
+	void SetMoveToStateWithActor(AActor* targetActor, const float walkSpeed = 400.0f, const float acceptanceRadius = 50.0f);
 
 	// ---------
 
@@ -176,7 +166,17 @@ public:
 	// ---- Utility ----
 
 	// Get Player Pawn reference
+	UFUNCTION(BlueprintPure, Category = "Utility|GOAP")
 	APawn* GetPlayerPawn();
+
+	UFUNCTION(BlueprintPure, Category = "Utility|GOAP")
+	static FVector InvalidLocation() { return FVector(FLT_MAX); }
+
+	UFUNCTION(BlueprintPure, Category = "Utility|GOAP")
+	static bool IsValidLocation(const FVector location) { return location != FVector(FLT_MAX) && location != FVector::ZeroVector; }
+
+	UFUNCTION(BlueprintPure, Category = "Utility|GOAP")
+	UBlackboardComponent* GetBlackboard() const { return Blackboard; }
 
 	// ---------
 };

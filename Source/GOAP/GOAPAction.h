@@ -12,13 +12,31 @@
 
 class AGOAPAIController;
 
+USTRUCT(BlueprintType)
+struct FGOAPGoal
+{
+	GENERATED_BODY()
+
+public:
+	FGOAPGoal() {}
+	~FGOAPGoal() {}
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "GOAP Goal")
+	FString GoalDescription;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "GOAP Goal")
+	uint8 Priority;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "GOAP Goal")
+	FGOAPAtom GoalState;
+};
+
 UCLASS(Blueprintable, BlueprintType, meta = (ShowWorldContextPin))
 class GOAP_API UGOAPAction : public UObject
 {
 	GENERATED_BODY()
 
-private:
-	
+			
 public:
 	UGOAPAction(const class FObjectInitializer& objInitializer);
 	
@@ -38,6 +56,16 @@ public:
 	// Internal state of this action's effects
 	FGOAPState Effects_Internal;
 
+	// If true, all states in Effects will be automatically applied to the agent's WorldState upon successful execution.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "GOAP Action")
+	bool bApplyEffectsWhenFinished;
+	// If true, this action will abort immediately if Preconditions are no longer satisfied during execution.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "GOAP Action")
+	bool bAbortIfPreconditionsNotSatisfied = true;
+	// If true, this action will abort immediately if Effects are satisfied during execution.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "GOAP Action")
+	bool bAbortIfEffectsAreSatisfied = true;
+
 	// How often this action should Execute/tick while active, default 0 = every tick
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "GOAP Action")
 	float TickRate;
@@ -52,44 +80,22 @@ public:
 	float CostUpdateRate = 60.0f;
 	// Time since last UpdateCost
 	float TimeSinceLastCostUpdate = 0.0f;
-
-	// Pointer to the target Actor of this action (optional)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GOAP Action")
-	TWeakObjectPtr<AActor> ActionTarget = nullptr;
-
-	// Position that the agent needs to be at to perform this action (only used when state "AtLocation" is a precondition or effect)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GOAP Action")
-	FVector AtLocationTarget = FVector(FLT_MAX);
 	
 	// Required range from target to perform this action
 	//	 If outside this range, agent will move towards it using pathfinding
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "GOAP Action")
 	float InteractionRange;
 
-	// If this action is active, should sensor stimuli interrupt MoveTo state
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "GOAP Action")
-	bool ShouldInterruptMoveOnTargetAcquisition = false;
-
-
-	// Helpers for the use of EQS queries
-
-	// Is there a pending query request?
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GOAP Action")
-	bool IsEQSQueryRequestPending;
-
-	// Is there any EQS results available
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GOAP Action")
-	bool IsEQSResultsAvailable;
-
-	// Get the query results for actors
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GOAP Action")
+	UPROPERTY(BlueprintReadOnly)
 	TArray<AActor*> QueryResultsActor;
-
-	// Get the query results for locations
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GOAP Action")
+	UPROPERTY(BlueprintReadOnly)
 	TArray<FVector> QueryResultsLocation;
+	UPROPERTY(BlueprintReadWrite)
+	bool bIsQueryResultsPending;
+	UPROPERTY(BlueprintReadWrite)
+	bool bIsQueryResultsAvailable;
 
-
+	
 	// Configures the action with default settings, copying data to Internal
 	void SetupDefaults();
 
@@ -97,19 +103,15 @@ public:
 	UFUNCTION(BlueprintPure, Category = "GOAP|Actions")
 	bool ArePreconditionsSatisfied(AGOAPAIController* controller);
 
-	// Checks if agent is within range of whatever it needs to be in range of
-	UFUNCTION(BlueprintPure, Category = "GOAP|Actions")
-	bool IsInRange(AGOAPAIController* controller);
-
 	// Checks if this action's target state (effect) is already satisfied by this agent's current world state
 	UFUNCTION(BlueprintPure, Category = "GOAP|Actions")
 	bool AreEffectsSatisifed(AGOAPAIController* controller);
 
+	// TODO: Not yet implemented!
+	// Checks if agent is within range of whatever it needs to be in range of
 	UFUNCTION(BlueprintPure, Category = "GOAP|Actions")
-	AActor* GetBestActorResult();
+	bool IsInRange(AGOAPAIController* controller);
 
-	UFUNCTION(BlueprintPure, Category = "GOAP|Actions")
-	FVector GetBestLocationResult();
 
 	UFUNCTION(BlueprintNativeEvent, Category = "GOAP|Actions")
 	bool CheckProceduralPreconditions(AGOAPAIController* controller);
@@ -119,11 +121,23 @@ public:
 	//	 Can/should be overridden in Blueprint
 	UFUNCTION(BlueprintNativeEvent, Category = "GOAP|Actions")
 	bool Execute(AGOAPAIController* controller, float DeltaSeconds);
-	virtual bool Execute_Implementation(AGOAPAIController* controller, float DeltaSeconds) { return false; };
+	virtual bool Execute_Implementation(AGOAPAIController* controller, float deltaSeconds) { return false; };
 
 	// Called each tick while this is the active action, returns true when completed
 	//	 Can/should be overridden in Blueprint
 	UFUNCTION(BlueprintNativeEvent, Category = "GOAP|Actions")
 	void UpdateCost(AGOAPAIController* controller);
 	virtual void UpdateCost_Implementation(AGOAPAIController* controller) {};
+
+	// Called when action is running and Preconditions are no longer satisfied (only if 'bInterruptOnPreconditionsNotSatisfied == TRUE')
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "GOAP|Actions")
+	void Abort(AGOAPAIController* controller);
+	virtual void Abort_Implementation(AGOAPAIController* controller) {};
+
+
+	UFUNCTION(BlueprintPure, Category = "GOAP|Actions")
+	AActor* GetQueryResultsActor(const uint8 index) const { return QueryResultsActor[index]; }
+
+	UFUNCTION(BlueprintPure, Category = "GOAP|Actions")
+	FVector GetQueryResultsLocation(const uint8 index) const { return QueryResultsLocation[index]; }
 };

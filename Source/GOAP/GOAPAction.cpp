@@ -36,42 +36,25 @@ bool UGOAPAction::ArePreconditionsSatisfied(AGOAPAIController* controller)
 	return controller->WorldState.IsGOAPStateSatisfied(Preconditions_Internal);
 }
 
-bool UGOAPAction::IsInRange(AGOAPAIController* controller)
-{
-	if (ActionTarget == nullptr)
-	{
-		return false;
-	}
-
-	FVector actorLoc = controller->GetPawn()->GetActorLocation();
-	FVector targetLoc = ActionTarget->GetActorLocation();
-
-	float rangeToTarget = (actorLoc - targetLoc).Size();
-
-	return rangeToTarget < InteractionRange;
-}
-
 bool UGOAPAction::AreEffectsSatisifed(AGOAPAIController* controller)
 {
 	return controller->WorldState.IsGOAPStateSatisfied(Effects_Internal);
 }
 
-AActor* UGOAPAction::GetBestActorResult()
-{
-	if (QueryResultsActor.Num() <= 0)
-	{
-		return nullptr;
-	}
-	
-	return QueryResultsActor[0];
-}
 
-FVector UGOAPAction::GetBestLocationResult()
+bool UGOAPAction::IsInRange(AGOAPAIController* controller)
 {
-	if (QueryResultsLocation.Num() <= 0)
-	{
-		return FVector(FLT_MAX);
-	}
+//	if (ActionTarget == nullptr)
+//	{
+//		return false;
+//	}
+//
+//	FVector actorLoc = controller->GetPawn()->GetActorLocation();
+//	FVector targetLoc = ActionTarget->GetActorLocation();
+//
+//	float rangeToTarget = (actorLoc - targetLoc).Size();
+//
+//	return rangeToTarget < InteractionRange;
 
-	return QueryResultsLocation[0];
+	return false;
 }

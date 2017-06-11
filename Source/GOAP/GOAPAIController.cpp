@@ -9,7 +9,7 @@ AGOAPAIController::AGOAPAIController(const FObjectInitializer& objInitializer) :
 	Super(objInitializer.SetDefaultSubobjectClass<UCrowdFollowingComponent>(TEXT("PathFollowingComponent")))
 {
 	// Set TeamID. Default TeamID for AI agents are 1 (Player == 0)
-	SetGenericTeamId(FGenericTeamId(1));
+	AAIController::SetGenericTeamId(FGenericTeamId(1));
 
 	// Create Blackboard component
 	Blackboard = CreateDefaultSubobject<UBlackboardComponent>(TEXT("WS_BlackboardComponent"));
@@ -44,6 +44,8 @@ bool AGOAPAIController::LoadGOAPDefaults()
 			GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("Blackboard initialization failed!!"));
 			return false;
 		}
+
+		Blackboard->SetValueAsVector("TargetLocation", InvalidLocation());
 	}
 
 	return true;
@@ -53,8 +55,8 @@ void AGOAPAIController::BeginPlay()
 {
 	Super::BeginPlay();
 
-	_Planner = NewObject<UGOAPPlanner>(this);
-
+	Planner = NewObject<UGOAPPlanner>(this);
+	
 	LoadGOAPDefaults();
 }
 
@@ -90,18 +92,21 @@ void AGOAPAIController::Tick(float deltaTime)
 	}
 
 	// CurrentAction should be set at this point. Check validity just to be sure.
-	if (CurrentAction->IsValidLowLevel())
+	if (CurrentAction != nullptr && CurrentAction->IsValidLowLevel())
 	{
 		// If preconditions for current action aren't met, the plan is invalid, "complete" action and clear plan queue
-		if (!CurrentAction->ArePreconditionsSatisfied(this))
+		if (!CurrentAction->ArePreconditionsSatisfied(this) && CurrentAction->bAbortIfPreconditionsNotSatisfied)
 		{
 			GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("CurrentAction no longer valid. Re-plan!!"));
-			CurrentAction = nullptr;
-			ActionQueue.Empty();
+
+			CurrentAction->Abort(this);
+			ClearCurrentActionAndPlan();
 		}
-		else if (CurrentAction->AreEffectsSatisifed(this))
+		else if (CurrentAction->AreEffectsSatisifed(this) && CurrentAction->bAbortIfEffectsAreSatisfied)
 		{
 			// If the target state is satisfied by the WorldState, just complete the action without clearing plan queue
+
+			CurrentAction->Abort(this);
 			CurrentAction = nullptr;
 		}
 		else
@@ -119,9 +124,12 @@ void AGOAPAIController::Tick(float deltaTime)
 				if (CurrentAction->Execute(this, deltaTime))
 				{
 					// Apply effects of action to Agent's current WorldState
-					for (FGOAPAtom& eff : CurrentAction->Effects.State)
+					if(CurrentAction->bApplyEffectsWhenFinished)
 					{
-						SetWorldState(eff.Key, eff.Value);
+						for (FGOAPAtom& eff : CurrentAction->Effects.State)
+						{
+							SetWorldState(eff.Key, eff.Value);
+						}
 					}
 
 					// Clear the action ptr so we can try to process the next one in the queue on next tick
@@ -149,7 +157,7 @@ void AGOAPAIController::Tick(float deltaTime)
 		// Get the new/waiting Job (if one exists) and execute it.. 
 		if (EQSJobsQueue.Dequeue(EQSCurrentJob))
 		{
-			EQSCurrentJob.CallingAction->IsEQSQueryRequestPending = true;
+			EQSCurrentJob.CallingAction->bIsQueryResultsPending = true;
 			EQSRequest = FEnvQueryRequest(EQSCurrentJob.Query, GetCharacter());
 			EQSRequest.Execute(EQSCurrentJob.QueryRunMode, this, &AGOAPAIController::OnEQSQueryFinished);
 		}
@@ -164,50 +172,34 @@ void AGOAPAIController::Possess(APawn* pawn)
 void AGOAPAIController::OnMoveCompleted(FAIRequestID requestID, const FPathFollowingResult& result)
 {
 	Super::OnMoveCompleted(requestID, result);
-
-	SetWorldState(Settings->GetByteKey(MakeShareable<FString>(new FString(TEXT("AtTargetLocation")))), false);
-
-	_IsMoveCompleted = true;
 }
 
-void AGOAPAIController::SetMoveToStateWithTarget(AActor* targetActor, const float acceptanceRadius, const float walkSpeed)
+void AGOAPAIController::SetMoveToStateWithLocation(const FVector targetLocation, const float walkSpeed, const float acceptanceRadius)
 {
-	if (!targetActor)
-	{
+	if (targetLocation == InvalidLocation())
 		return;
-	}
-
-	DrawDebugLine(GetWorld(), GetPawn()->GetActorLocation(), targetActor->GetActorLocation(), FColor::Green, true, 1.0f, 0, 12.0f);
-
-	// Set move speed
-	GetCharacter()->GetCharacterMovement()->MaxWalkSpeed = walkSpeed;
-
-	// Set in motion pathfinding to actor
-	MoveToActor(targetActor, acceptanceRadius);
-
-	MoveToTargetActor = targetActor;
-	_IsMoveCompleted = false;
-}
-
-void AGOAPAIController::SetMoveToStateWithLocation(const FVector targetLocation, const float walkSpeed)
-{
-	if (targetLocation == FVector(FLT_MAX))
-	{
-		return;
-	}
 
 	DrawDebugLine(GetWorld(), GetPawn()->GetActorLocation(), targetLocation, FColor::Blue, true, 1.0f, 0, 12.0f);
-
-	// Set this to self to avoid failing nullptr checks
-	MoveToTargetActor = GetCharacter();
 
 	// Set move speed
 	GetCharacter()->GetCharacterMovement()->MaxWalkSpeed = walkSpeed;
 
 	// Set in motion pathfinding to location
-	MoveToLocation(targetLocation);
+	MoveToLocation(targetLocation, acceptanceRadius);
+}
 
-	_IsMoveCompleted = false;
+void AGOAPAIController::SetMoveToStateWithActor(AActor* targetActor, const float walkSpeed, const float acceptanceRadius)
+{
+	if (targetActor == nullptr)
+		return;
+
+	DrawDebugLine(GetWorld(), GetPawn()->GetActorLocation(), targetActor->GetActorLocation(), FColor::Blue, true, 1.0f, 0, 12.0f);
+
+	// Set move speed
+	GetCharacter()->GetCharacterMovement()->MaxWalkSpeed = walkSpeed;
+
+	// Set in motion pathfinding to location
+	MoveToActor(targetActor, acceptanceRadius);
 }
 
 void AGOAPAIController::ClearCurrentActionAndPlan()
@@ -223,18 +215,36 @@ bool AGOAPAIController::BuildActionPlanForCurrentGoal()
 
 	TArray<TWeakObjectPtr<UGOAPAction>> planActions;
 
-	// TODO: We only support single state goals right now... !!!
-	FGOAPAtom targetState = CurrentGoal;
+	bool hasValidGoal = false;
+	FGOAPGoal selectedGoal;
 
-	// The goal is already satisfied, discard it
-	if (IsStateSatisfied(targetState))
+	// Find highest priority goal
+	for (FGOAPGoal goal : Goals)
 	{
-// 		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, TEXT("State already satisfied!!"));
+		// The goal is already satisfied, discard it
+		if (IsStateSatisfied(goal.GoalState))
+			continue;
+
+		if (goal.Priority > selectedGoal.Priority || !hasValidGoal)
+		{
+			selectedGoal = goal;
+			hasValidGoal = true;
+		}
+	}
+
+	if(!hasValidGoal)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("No valid goals found!"));
 		return false;
 	}
 
+	CurrentGoal = selectedGoal.GoalState;
+
+	// TODO: We only support single state goals right now... !!!
+	FGOAPAtom targetState = selectedGoal.GoalState;
+
 	// Call planner to make a plan
-	planActions = _Planner->Plan(this, MaxGraphNodes, targetState.Key, targetState.Value, &GOAPActions, &WorldState, *this);
+	planActions = Planner->Plan(this, MaxGraphNodes, targetState.Key, targetState.Value, &GOAPActions, &WorldState, *this);
 
 	// If we find a plan, push it onto the ActionQueue
 	if (planActions.Num() > 0)
@@ -356,8 +366,8 @@ void AGOAPAIController::OnEQSQueryFinished(TSharedPtr<FEnvQueryResult> result)
 			result->GetAllAsLocations(EQSCurrentJob.CallingAction->QueryResultsLocation);
 		}
 
-		EQSCurrentJob.CallingAction->IsEQSResultsAvailable = true;
-		EQSCurrentJob.CallingAction->IsEQSQueryRequestPending = false;
+		EQSCurrentJob.CallingAction->bIsQueryResultsAvailable = true;
+		EQSCurrentJob.CallingAction->bIsQueryResultsPending = false;
 		EQSCurrentJob.CallingAction = nullptr;
 		EQSRequest = nullptr;
 	}

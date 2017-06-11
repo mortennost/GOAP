@@ -134,7 +134,7 @@ TArray<TWeakObjectPtr<UGOAPAction>> UGOAPPlanner::Plan(UObject* outer, const int
 		planString += action->ActionDescription + TEXT(":");
 	}
 
-	GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Cyan, planString);
+	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Cyan, planString);
 
 	return _GOAPPlan;
 }

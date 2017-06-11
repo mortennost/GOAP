@@ -2,6 +2,7 @@
 
 #include "GOAP.h"
 #include "Kismet/HeadMountedDisplayFunctionLibrary.h"
+#include "Navigation/CrowdManager.h"
 #include "GOAPCharacter.h"
 
 //////////////////////////////////////////////////////////////////////////
@@ -72,6 +73,19 @@ void AGOAPCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInpu
 
 	// VR headset functionality
 	PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &AGOAPCharacter::OnResetVR);
+}
+
+void AGOAPCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// Register with CrowdManager to make sure AI agent's avoid the player.
+	UCrowdManager* crowdManager = UCrowdManager::GetCurrent(this);
+	if(crowdManager != nullptr)
+	{
+		crowdManager->RegisterAgent(this);
+		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("Successfully registered with CrowdManager"));
+	}
 }
 
 void AGOAPCharacter::OnResetVR()
