@@ -141,6 +141,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GOAP")
 	void SetWorldState(FGOAPAtomKey key, bool value);
 
+	// Sets the state of a single atom, creates the entry if it doesn't already exist 
+	//		(Utility function for Blueprints)
+	UFUNCTION(BlueprintCallable, Category = "GOAP")
+	void SetWorldStateWithAtom(FGOAPAtom atom, bool value);
+
 	// Gets the state value of a single atom
 	UFUNCTION(BlueprintCallable, Category = "GOAP")
 	bool GetWorldState(FGOAPAtomKey key);
@@ -161,6 +166,8 @@ public:
 	// Called when an EQS query finishes
 	void OnEQSQueryFinished(TSharedPtr<FEnvQueryResult> result);
 
+	UFUNCTION(BlueprintCallable, Category = "GOAP")
+	bool IsMoveInProgress() const;
 
 
 	// ---- Utility ----

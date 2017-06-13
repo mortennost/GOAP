@@ -21,6 +21,16 @@ class AGOAPCharacter : public ACharacter, public IGenericTeamAgentInterface, pub
 	// Team ID
 	FGenericTeamId TeamId;
 
+	// -- ICrowdAgentInterface implementation
+//	virtual FVector GetCrowdAgentLocation() const override;
+//	virtual FVector GetCrowdAgentVelocity() const override;
+//	virtual void GetCrowdAgentCollisions(float& cylinderRadius, float& cylinderHalfHeigh) const override;
+//	virtual float GetCrowdAgentMaxSpeed() const override;
+//	virtual int32 GetCrowdAgentAvoidanceGroup() const override;
+//	virtual int32 GetCrowdAgentGroupsToAvoid() const override;
+//	virtual int32 GetCrowdAgentGroupsToIgnore() const override;
+
+
 public:
 	AGOAPCharacter();
 

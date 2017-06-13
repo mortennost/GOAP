@@ -83,8 +83,8 @@ void AGOAPCharacter::BeginPlay()
 	UCrowdManager* crowdManager = UCrowdManager::GetCurrent(this);
 	if(crowdManager != nullptr)
 	{
-		crowdManager->RegisterAgent(this);
-		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("Successfully registered with CrowdManager"));
+		ICrowdAgentInterface* cAgent = Cast<ICrowdAgentInterface>(this);
+		crowdManager->RegisterAgent(cAgent);
 	}
 }
 

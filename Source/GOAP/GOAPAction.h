@@ -35,8 +35,7 @@ UCLASS(Blueprintable, BlueprintType, meta = (ShowWorldContextPin))
 class GOAP_API UGOAPAction : public UObject
 {
 	GENERATED_BODY()
-
-			
+		
 public:
 	UGOAPAction(const class FObjectInitializer& objInitializer);
 	
@@ -95,6 +94,9 @@ public:
 	UPROPERTY(BlueprintReadWrite)
 	bool bIsQueryResultsAvailable;
 
+	UPROPERTY(BlueprintReadOnly)
+	bool bShouldAbort;
+
 	
 	// Configures the action with default settings, copying data to Internal
 	void SetupDefaults();
@@ -132,7 +134,7 @@ public:
 	// Called when action is running and Preconditions are no longer satisfied (only if 'bInterruptOnPreconditionsNotSatisfied == TRUE')
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "GOAP|Actions")
 	void Abort(AGOAPAIController* controller);
-	virtual void Abort_Implementation(AGOAPAIController* controller) {};
+	virtual void Abort_Implementation(AGOAPAIController* controller) { bShouldAbort = true; }
 
 
 	UFUNCTION(BlueprintPure, Category = "GOAP|Actions")

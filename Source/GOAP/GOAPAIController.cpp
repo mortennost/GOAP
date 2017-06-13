@@ -89,6 +89,11 @@ void AGOAPAIController::Tick(float deltaTime)
 		{
 			ActionQueue.Dequeue(CurrentAction);
 		}
+
+		if(CurrentAction != nullptr)
+		{
+			GEngine->AddOnScreenDebugMessage(1, 5.0f, FColor::Orange, TEXT("CurrentAction: ") + CurrentAction->ActionDescription);
+		}
 	}
 
 	// CurrentAction should be set at this point. Check validity just to be sure.
@@ -107,6 +112,13 @@ void AGOAPAIController::Tick(float deltaTime)
 			// If the target state is satisfied by the WorldState, just complete the action without clearing plan queue
 
 			CurrentAction->Abort(this);
+			CurrentAction = nullptr;
+		}
+		else if(CurrentAction->bShouldAbort)
+		{
+			// Important that this is reset. Maybe make OnReset() function??
+			CurrentAction->bShouldAbort = false; 
+
 			CurrentAction = nullptr;
 		}
 		else
@@ -234,7 +246,7 @@ bool AGOAPAIController::BuildActionPlanForCurrentGoal()
 
 	if(!hasValidGoal)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("No valid goals found!"));
+		GEngine->AddOnScreenDebugMessage(1, 5.0f, FColor::Red, TEXT("No valid goals found!"));
 		return false;
 	}
 
@@ -256,7 +268,7 @@ bool AGOAPAIController::BuildActionPlanForCurrentGoal()
 	}
 	else
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, TEXT("Could not find a plan!!"));
+		GEngine->AddOnScreenDebugMessage(1, 2.0f, FColor::Red, TEXT("Could not find a plan!!"));
 		return false;
 	}
 
@@ -303,6 +315,11 @@ FString AGOAPAIController::GetCurrentActionString()
 void AGOAPAIController::SetWorldState(FGOAPAtomKey key, bool value)
 {
 	WorldState.SetState(key.Key, value);
+}
+
+void AGOAPAIController::SetWorldStateWithAtom(FGOAPAtom atom, bool value)
+{
+	WorldState.SetState(FGOAPAtomKey(atom.Key).Key, value);
 }
 
 bool AGOAPAIController::GetWorldState(FGOAPAtomKey key)
@@ -371,6 +388,11 @@ void AGOAPAIController::OnEQSQueryFinished(TSharedPtr<FEnvQueryResult> result)
 		EQSCurrentJob.CallingAction = nullptr;
 		EQSRequest = nullptr;
 	}
+}
+
+bool AGOAPAIController::IsMoveInProgress() const
+{
+	return GetMoveStatus() != EPathFollowingStatus::Idle;
 }
 
 APawn* AGOAPAIController::GetPlayerPawn()
