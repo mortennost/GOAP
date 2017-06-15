@@ -6,7 +6,7 @@ public class GOAPEditor : ModuleRules
 {
 	public GOAPEditor(TargetInfo Target)
 	{
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine",  "GOAP", "InputCore", "GameplayTasks", "AIModule" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine",  "GOAP", "InputCore", "GameplayTasks", "AIModule", "UMG" });
 
 		PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore", "PropertyEditor", "EditorStyle", "UnrealEd", "GraphEditor", "BlueprintGraph" });
 		

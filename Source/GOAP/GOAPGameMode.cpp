@@ -13,3 +13,14 @@ AGOAPGameMode::AGOAPGameMode()
 		DefaultPawnClass = PlayerPawnBPClass.Class;
 	}
 }
+
+void AGOAPGameMode::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if(AIDebugWidgetRef != nullptr)
+	{
+		AIDebugWidget = CreateWidget<UUserWidget>(GetWorld(), AIDebugWidgetRef);
+		AIDebugWidget->AddToViewport();
+	}
+}
