@@ -30,6 +30,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "GOAP")
 	UBlackboardData* BlackboardDataAsset;
 
+	UPROPERTY(BlueprintReadOnly)
+	FString CurrentPlanString;
+
 
 public:
 	// Constructor (used to initialize CrowdFollowingComponent (Detour behavior) as the default PathFollowingComponent)
@@ -184,6 +187,9 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Utility|GOAP")
 	UBlackboardComponent* GetBlackboard() const { return Blackboard; }
+
+	UFUNCTION(BlueprintCallable, Category = "Utility|GOAP")
+	void GetDebugInfo(FString& currentGoalInfo, FString& currentPlanInfo) const;
 
 	// ---------
 };

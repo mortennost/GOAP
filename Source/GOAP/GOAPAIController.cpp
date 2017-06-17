@@ -226,6 +226,7 @@ bool AGOAPAIController::BuildActionPlanForCurrentGoal()
 // 	GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Cyan, TEXT("Building plan"));
 
 	TArray<TWeakObjectPtr<UGOAPAction>> planActions;
+	CurrentPlanString = TEXT("Empty");
 
 	bool hasValidGoal = false;
 	FGOAPGoal selectedGoal;
@@ -261,9 +262,13 @@ bool AGOAPAIController::BuildActionPlanForCurrentGoal()
 	// If we find a plan, push it onto the ActionQueue
 	if (planActions.Num() > 0)
 	{
+		CurrentPlanString.Empty();
+
 		for (int i = 0; i < planActions.Num(); i++)
 		{
 			ActionQueue.Enqueue(planActions[i]);
+
+			CurrentPlanString += planActions[i]->ActionDescription + TEXT("->");
 		}
 	}
 	else
@@ -398,4 +403,18 @@ bool AGOAPAIController::IsMoveInProgress() const
 APawn* AGOAPAIController::GetPlayerPawn()
 {
 	return UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetPawn();
+}
+
+void AGOAPAIController::GetDebugInfo(FString& currentGoalInfo, FString& currentPlanInfo) const
+{
+	for (auto& goal : Goals)
+	{
+		if(CurrentGoal.Key == goal.GoalState.Key)
+		{
+			currentGoalInfo = FString::Printf(TEXT("%s (Priority: %d)"), *goal.GoalDescription, goal.Priority);
+			break;
+		}
+	}
+
+	currentPlanInfo = CurrentPlanString;
 }
