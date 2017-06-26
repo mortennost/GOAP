@@ -5,26 +5,15 @@ using System.Collections.Generic;
 
 public class GOAPTarget : TargetRules
 {
-	public GOAPTarget(TargetInfo Target)
+	public GOAPTarget(TargetInfo Target) : base (Target)
 	{
 		Type = TargetType.Game;
-	}
 
-	//
-	// TargetRules interface.
-	//
+	    ExtraModuleNames.Add("GOAP");
 
-	public override void SetupBinaries(
-		TargetInfo Target,
-		ref List<UEBuildBinaryConfiguration> OutBuildBinaryConfigurations,
-		ref List<string> OutExtraModuleNames
-		)
-	{
-		OutExtraModuleNames.Add("GOAP");
-
-        if (UEBuildConfiguration.bBuildEditor)
-        {
-            OutExtraModuleNames.Add("GOAPEditor");
-        }
+	    if (UEBuildConfiguration.bBuildEditor)
+	    {
+	        ExtraModuleNames.Add("GOAPEditor");
+	    }
     }
 }

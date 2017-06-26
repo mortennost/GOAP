@@ -4,7 +4,7 @@ using UnrealBuildTool;
 
 public class GOAP : ModuleRules
 {
-	public GOAP(TargetInfo Target)
+	public GOAP(ReadOnlyTargetRules Target) : base (Target)
 	{
 		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "GameplayTasks", "AIModule", "UMG" });
         PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });

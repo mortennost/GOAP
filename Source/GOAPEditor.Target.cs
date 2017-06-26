@@ -5,22 +5,11 @@ using System.Collections.Generic;
 
 public class GOAPEditorTarget : TargetRules
 {
-	public GOAPEditorTarget(TargetInfo Target)
+	public GOAPEditorTarget(TargetInfo Target) : base (Target)
 	{
 		Type = TargetType.Editor;
-	}
-
-	//
-	// TargetRules interface.
-	//
-
-	public override void SetupBinaries(
-		TargetInfo Target,
-		ref List<UEBuildBinaryConfiguration> OutBuildBinaryConfigurations,
-		ref List<string> OutExtraModuleNames
-		)
-	{
-		OutExtraModuleNames.Add("GOAP");
-        OutExtraModuleNames.Add("GOAPEditor");
+        
+	    ExtraModuleNames.Add("GOAP");
+	    ExtraModuleNames.Add("GOAPEditor");
     }
 }

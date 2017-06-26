@@ -4,7 +4,7 @@ using UnrealBuildTool;
 
 public class GOAPEditor : ModuleRules
 {
-	public GOAPEditor(TargetInfo Target)
+	public GOAPEditor(ReadOnlyTargetRules Target) : base (Target)
 	{
 		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine",  "GOAP", "InputCore", "GameplayTasks", "AIModule", "UMG" });
 
